@@ -1,0 +1,199 @@
+<!doctype html>
+<html>
+
+<head>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+    .white-text {
+        color: white;
+    }
+</style>
+</head>
+<body>
+
+<h1>Pemdas Problem Generator</h1>
+
+<p>
+    <b>Expected length of problems:</b> <input id="eLen" value="5"> <br>
+    <b>Number of problems:</b> <input id="numProbs" value="10"> <br>
+    <button id="genBtn">Generate!</button>
+</p>
+
+<div id="results"></div>
+
+<script>
+
+// DOM stuff
+let $ = (sel) => document.querySelector(sel)
+
+$("#genBtn").onclick = () => {
+    let eLen = parseInt($("#eLen").value);
+    let n = parseInt($("#numProbs").value);
+    let res = "";
+    if (isNaN(n) || isNaN(eLen)) {
+        $("#results").innerHTML = "<b>Please put a number for expected length and number of problems!</b>"
+        return;
+    }
+    res = "<ol>";
+    for (let i=0; i<n; i++) {
+        let expr = gen_expr(eLen);
+        res += "<li>"
+        if (expr[0].length > 0) {
+            res += "let \\("+expr[0].join(", ") + "\\) <br> " // state the variables
+            res += "<br><br> "
+        }
+        
+        res += "\\("+expr[1] + " \\) <br> " // state problem
+        res += "<br><br>"
+        res += "= <span class='white-text'>" + expr[2]+"</span>" // show solution
+        res += "</li>"
+        res += "<br><br><br><br><br>"
+    }
+    res += "</ol>"
+    $("#results").innerHTML = res;
+    // slickly typeset
+    window.MathJax ? MathJax.typeset() : 0;
+}
+
+// should return [user_sym, js_sym]
+// js_sym may be an array to allow for variables
+let gen_num = (allowParens=true, maxCoef=7) => {
+    // only left parens b/c don't want an op followed by ")"
+    let nums = [1,2,2,2,2,2,2,3,3,3,3,3,3,3,4,4,4,4,4,4,4,5,5,5,5,6,6,7,8,9, "(","(","(","(","(", "x","x","x","x","x","x","y","y","y","y","y","y","y","\\phi"];
+    let rIdx = Math.floor(Math.random()*nums.length)
+    let sym = nums[rIdx]
+    if (!allowParens) {
+        while (sym == "(") {
+            rIdx = Math.floor(Math.random()*nums.length)
+            sym = nums[rIdx]
+        }
+    }
+    // see if it's a variable needing a coef
+    if (sym == "x" || sym == "y" || sym == "\\phi") {
+        let coef = Math.floor(Math.random()*maxCoef)+1
+        if (coef > 1) {
+            return [coef+sym, [coef,"*",sym]]
+        }
+    }
+    return [sym, sym];
+}
+
+// returns [user_sym, js_sym]
+let gen_op = (allowParens=true) => {
+    // left parens fine here b/c do want stuff like 4+(2+3)
+    let ops = ["+", "-", "*", "/", "(", ")+", ")-"]
+    let rIdx = Math.floor(Math.random()*ops.length)
+    let sym = ops[rIdx]
+    if (!allowParens) {
+        while (sym == "(" || sym == ")+" || sym == ")-") {
+            rIdx = Math.floor(Math.random()*ops.length)
+            sym = ops[rIdx]
+        }
+    }
+    return [sym, sym];
+}
+
+let gen_expr = (eLen) => {
+    // generates an expr via num,op,num,op,...num
+    let expr = [];
+    let js_expr = []; // used for eval purposes
+    let leftParens = 0;
+    let rightParens = 0;
+    let r = 1;
+    let sym;
+    // now generate some symbols
+    while (r > 1/eLen) {
+        // gen a number first
+        // comes as [user_sym, js_sym]
+        sym = gen_num();
+        
+        if (sym[0] == "(") {
+            leftParens++;
+            expr = expr.concat(sym[0]);
+            js_expr = js_expr.concat(sym[1])
+            continue; // don't want (*)
+        }
+        
+        // add it to the expression
+        expr = expr.concat(sym[0])
+        js_expr = js_expr.concat(sym[1])
+        // now get an operator
+        sym = gen_op();
+        // if extra ")" then gen new op
+        while ((sym[0] == ")+" || sym[0] == ")-") && leftParens <= rightParens) {
+            sym = gen_op();
+        }
+
+        if (sym[0] == "(") {
+            leftParens++;
+            sym[1] = ["*", sym[1]];
+        }
+        if (sym[0] == ")+" || sym[0] == ")-") {
+            rightParens++;
+        }
+        // add it to the expression
+        expr = expr.concat(sym[0]);
+        js_expr = js_expr.concat(sym[1])
+        // see if we keep going
+        r = Math.random();
+    }
+    // ok need to end it with a number and the possibly parens
+    sym = gen_num(false); // allowParens = false
+    // add it
+    expr = expr.concat(sym[0])
+    js_expr = js_expr.concat(sym[1])
+    // ok, now match the parens
+    while (rightParens < leftParens) {
+        expr = expr.concat(")")
+        js_expr = js_expr.concat(")")
+        rightParens++
+    }
+    // almost done!
+    console.log("expr:", expr, "js_expr:", js_expr);
+    // now pick random values for x and y (different)
+    let x = Math.floor(Math.random()*11)-5;
+    let y = Math.floor(Math.random()*11)-5;
+    while (x == y) {
+        y = Math.floor(Math.random()*11)-5;
+    }
+    let phi = Math.floor(Math.random()*11)-5;
+    while (x == phi || y == phi) {
+        phi = Math.floor(Math.random()*11)-5;
+    }
+    // sub the expression given the x and y
+    let subbed = js_expr.map(s => {
+        if (s == "x") {
+            return "("+x+")"; // be sure to wrap it
+        }
+        if (s == "y") {
+            return "("+y+")";
+        }
+        if (s == "\\phi") {
+            return "("+phi+")"
+        }
+        return s;
+    })
+    console.log("subbed:", subbed);
+    // now eval!
+    let ans = eval(subbed.join(""))
+    expr_str = expr.join("")
+    let vars = [];
+    if (expr_str.indexOf("x") != -1) {
+        vars = vars.concat("x = "+x)
+    }
+    if (expr_str.indexOf("y") != -1) {
+        vars = vars.concat("y = "+y)
+    }
+    if (expr_str.indexOf("\\phi") != -1) {
+        vars = vars.concat("\\phi = "+phi)
+    }
+    return [vars,
+            expr.join(""),
+            ans]
+}
+
+</script>
+</body>
+</html>
