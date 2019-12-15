@@ -13,7 +13,26 @@
 </head>
 <body>
 
-<h1>Pemdas Problem Generator</h1>
+<h1>Random Pemdas Problem Generator</h1>
+
+<p>
+    Welcome to this random pemdas problem generator. This page generates problems by (pseudo)randomly
+    selecting numbers and operators. It does not generate these problems in a "nice" way such that terms
+    will nicely cancel out. It's rather unlikely that there will be any canceling out. This page is
+    all about <b>practicing the order of operations</b>. You can check your work by selecting the white text
+    next to the equals sign. I recently added support for <b>fractions</b> so you'll still get
+    0.42857142857142855 but also 3/7. This makes it easier to check your work without a calculator. 
+</p>
+
+<p>
+    Note: it says "expected length of problems" because it (pseudo)randomly decides when to stop
+    adding symbols to the problem. It does this in a way that the average length of the problems will be around
+    the desired "expected length" but this also means it's possible to get really short and really long problems.
+</p>
+
+<p>
+    This page uses <a href="https://www.mathjax.org/">MathJax</a> to render the math problems in a nice way.
+</p>
 
 <p>
     <b>Expected length of problems:</b> <input id="eLen" value="5"> <br>
@@ -25,8 +44,37 @@
 
 <script>
 
+// math helpers for rationalization
+
+// floating point numbers sometimes have errors in the last few digits
+// so to check if something's an int we should chop off last few digits
+let is_nearly_int = (x) => {
+    let chopped = Math.floor(x*1e11)/1e11
+    let d = Math.abs(Math.round(chopped) - chopped)
+    return d < 1e-7
+}
+
+let rationalize = (x) => {
+    if (is_nearly_int(x)) {
+        return [Math.round(x)]; // already rational
+    }
+    // test up to 100_000
+    // might be able to do this more efficiently
+    for (let d=2; d<100000; d++) {
+        if (is_nearly_int(d*x)) {
+            // cool got it!
+            let n = Math.round(d*x);
+            return [n, d];
+        }
+    }
+    // whoops, couldn't figure it out
+    return [x];
+}
+
 // DOM stuff
 let $ = (sel) => document.querySelector(sel)
+
+
 
 $("#genBtn").onclick = () => {
     let eLen = parseInt($("#eLen").value);
@@ -47,7 +95,22 @@ $("#genBtn").onclick = () => {
         
         res += "\\("+expr[1] + " \\) <br> " // state problem
         res += "<br><br>"
-        res += "= <span class='white-text'>" + expr[2]+"</span>" // show solution
+        // rationalize and show solution
+        let sol = expr[2]
+        let [p, q] = rationalize(sol)
+        if (q) {
+            let f_part = sol - Math.floor(sol)
+            let n = sol - f_part;
+            let [fp, fq] = rationalize(f_part)
+            res += `= <span class='white-text'>${sol} = ${p}/${q} = ${n} and ${fp}/${fq}</span>` // show solution
+        } else {
+            // failed to rationalize, maybe b/c already nearly an int
+            if (is_nearly_int(sol)) {
+                sol = Math.round(sol)
+            }
+            res += "= <span class='white-text'>" + sol +"</span>" // just show decimal solution
+        }
+        
         res += "</li>"
         res += "<br><br><br><br><br>"
     }
@@ -56,6 +119,8 @@ $("#genBtn").onclick = () => {
     // slickly typeset
     window.MathJax ? MathJax.typeset() : 0;
 }
+
+
 
 // should return [user_sym, js_sym]
 // js_sym may be an array to allow for variables
@@ -83,15 +148,20 @@ let gen_num = (allowParens=true, maxCoef=7) => {
 // returns [user_sym, js_sym]
 let gen_op = (allowParens=true) => {
     // left parens fine here b/c do want stuff like 4+(2+3)
-    let ops = ["+", "-", "*", "/", "(", ")+", ")-"]
+    let ops = ["+", "-", "*", "/", "(", ")+", ")-", "^2+", "^2-", "^2*", "^2/"]
     let rIdx = Math.floor(Math.random()*ops.length)
-    let sym = ops[rIdx]
+    let sym = ops[rIdx]    
     if (!allowParens) {
         while (sym == "(" || sym == ")+" || sym == ")-") {
             rIdx = Math.floor(Math.random()*ops.length)
             sym = ops[rIdx]
         }
     }
+    // check for exponents b/c for js needs ** 
+    if (sym.indexOf("^") != -1) {
+        return [sym, sym.replace("^", "**")]
+    }
+    // else the sym is valid js
     return [sym, sym];
 }
 
