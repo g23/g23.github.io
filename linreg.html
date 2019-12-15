@@ -1,0 +1,287 @@
+<!doctype html>
+<html>
+<head>
+    <title>Regression Demo</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="container">
+<h1>Linear Regression Demo and Derivation</h1>
+<p>
+    This page explains how <b>gradient descent</b> works by using it to compute a line
+    that best goes through some given data. This line will be referred to as the "line
+    of best fit."
+</p>
+<h2>Input data</h2>
+<p>
+    Click below to add points that make roughly a line. Then click "compute line of best
+    fit" to see the line of best fit computed using the selected parameters.
+</p>
+<div class="row">
+    <div class="col">
+        <canvas id="dataCanvas" width="400" height="400"></canvas>
+    </div>
+    <div class="col">
+        <h3>Controls</h3>
+        <table>
+            <tr>
+                <td>Iterations:</td><td><input id="nIters" type="number" value="1000" /></td>
+            </tr>
+            <tr>
+                <td>\(\alpha\):</td><td><input id="alpha" type="number" value="0.03" /></td>
+            </tr>
+        </table>
+        <div id="outputArea"></div>
+        <button id="computeLineBtn">Compute line of best fit</button>
+        <br/>
+        <button id="resetBtn">Clear data</button>
+    </div>
+</div>
+
+<h2>How it works</h2>
+<p>
+    The goal is to find the line that's closest to the given points. A line, \(\hat{y} = mx + b\)
+    is determined by it's slope (<b>m</b>) and it's intercept (<b>b</b>). To determine which line
+    is closest, we can define an error function that will tell us how far off we are and then
+    minimize it to get the closest line. One way we could define such an error function is to
+    take the sum of the squares of the distances of each of the points:
+
+    \[E(m, b) = \sum (y - \hat{y})^2 = \sum_{(x,y) \in data} (y - mx - b)^2\]
+
+    (One reason to square the difference is to make sure the values are all positive. Additionally,
+    it's easier to work with a squared quantity rather than its absolute value.) Notice this error
+    is a function of \(m\), \(b\), and the data. So given some data, an \(m\), and a \(b\) we can
+    determine how close the line \(\hat{y} = mx + b\) is to the data. If the line goes through all
+    the points exactly, the distance for each will be zero and so the error will be zero. If the
+    line is way off from the points, the distances will be large and the error will be large. So our
+    task of finding the closest line is a matter of finding the \(m\) and \(b\) that minimize the error.
+</p>
+
+<h2>Minimizing the error</h2>
+<p>
+    There are few ways to approach this problem and a few ways to find the closest line. We
+    could take a statistical approach or even a linear algebra approach (SVD) to find the best
+    line. However, we're going to take an iterative approach to approximate the solution.
+    Why? It's true that we could use some fancy methods to solve this "line of best fit"
+    problem, but what if we wanted to find the best quadratic function through the data,
+    or perhaps something much more complicated like an artificial neural network? In these
+    cases finding an exact solution may be hard, if not impossible (that is, not having a
+    closed form solution) and require an iterative numerical solution. The method we'll be
+    using is called <b>Gradient Descent</b> and usually does a good job of minimizing error
+    functions (though it is not guaranteed to give the most minimal solution, more about this later). 
+</p>
+<h2>Gradient Descent: Climbing down the mountain</h2>
+<p>
+    Gradient descent is a popular technique for minimizing general functions in an iterative
+    manner. Let's consider the error function again for some fixed data: it is a function of
+    two variables, \(m\) and \(b\), that outputs a number, which indicates how close or far
+    the line is from the data. Bigger numbers mean the line is further away.
+</p>
+<p>
+    Since this error function is a function of two variables, we can imagine it like a mountain
+    range: there are some coordinates \(m\) and \(b\) (you can think like latitude and longitude)
+    and then the result is the altitude. The "line of best fit" is the place on the map
+    (the \(m\) and \(b\) coordinates) that has the lowest altitude. In real life, if we were
+    on a mountain, we could probably look and see where the point of lowest altitude is located.
+    However, each glance at the error function requires computation, so looking around for the
+    lowest altitude will require lots of computation and would be a slow and an inefficient method.
+</p>
+<p>
+    What we can do instead is to get a feel for how the altitude is changing in our local area
+    (is our left foot down and right foot up? Do we feel like we're leaning in some direction?).
+    We can do this with the error function as well by computing something called the <b>gradient</b>.
+    The gradient of a scalar function (a function that outputs a single number) at a particular
+    point is a vector that points in the direction of greatest increase. In our mountain range
+    example, the gradient would tell us, given where we are, which direction would be the steepest
+    (and also some information about how steep). So, if we wanted to find our way down the mountain,
+    we should go in the opposite direction of the gradient.
+</p>
+<p>
+    It is important that we go down the mountain in small steps. This is because the direction down
+    the mountain might twist and turn as we walk. Small steps are important because taking too big
+    of a step might cause us to miss a quick way down the mountain. This process of step-by-step walking
+    in the opposite direction of the gradient is called gradient descent.
+</p>
+<h2>Local vs Global Minima and Variations</h2>
+<p>
+    Gradient descent is pretty straightforward: to get off the mountain, follow the path that
+    slopes down the most. Beware, however, this doesn't necessarily get you to ground level; you
+    could get stuck in a <b>local minima</b>. Imagine in this mountain range there is a valley
+    between two mountains, if you end up there, there's no longer a path downhill and the gradient
+    descent approach will be stuck there. A valley like this is called a <b>local minima</b> because
+    it is the minimum value locally (compared to the nearby points). This is in contrast to the
+    <b>global minima</b> which is actually the minimum value. Finding the <b>global minima</b> is
+    a bit trickier, though it is not always necessary. Sometimes the results of a local minima are
+    fine, and, if not, doing gradient descent again from a different starting location might give
+    a better minima. There are variations to gradient descent that attempt to address the local
+    minima problem and other variations to make things less computationally demanding. A popular
+    variant is <b>stochastic gradient descent</b> which avoids calculating the complete gradient
+    by randomly selecting a few of the components and using those. In the imaginary mountain case
+    this would equate to randomly selecting either the N-S direction or the E-W direction, then
+    taking the appropriate downhill step in whichever direction. In problems with more variables
+    this random subselection could be a big computational time saver.
+</p>
+<h2>How to Compute the Gradient</h2>
+<p>
+    This section is particularly math intensive and requires knowledge of calculus (probably just
+    one semester of calculus is sufficient). Most programmers probably can skip this section because
+    a lot of software (like TensorFlow for example) uses <b>automatic differentiation</b> to
+    automatically compute the gradient (this is one of the reasons TensorFlow has a special
+    "Variable" type so it can automatically do the math). That being said, there isn't too much
+    math here, you just need to know about derivatives, which basically describe how functions
+    change given changes in their variables.
+</p>
+<p>
+    The gradient of some \(f(x, y)\) is defined as
+    \[\nabla f(x,y) = \begin{bmatrix} \frac{\partial f}{\partial x}(x,y) \\ \frac{\partial f}{\partial y}(x,y) \end{bmatrix}\]
+    (If you haven't seen those \(\partial\) symbols before, it's called <b>partial differentiation</b>
+    and it just means treat the other variables as constants when you take the derivative.)
+</p>
+<p>
+    So in the case of "line of best fit" we need to compute the gradient of our error function.
+    \[\nabla E = \begin{bmatrix} \frac{\partial E}{\partial m} \\ \frac{\partial E}{\partial b} \end{bmatrix}\]
+    \[\frac{\partial E}{\partial m} = \sum_{(x,y) \in data} -2(y - mx - b)x \]
+    \[\frac{\partial E}{\partial b} = \sum_{(x,y) \in data} -2(y - mx - b) \]
+    Then to find the "line of best fit" we can start with some random initial guess
+    \(\begin{bmatrix} m_0 \\ b_0 \end{bmatrix}\)
+    and iterate several times over
+    \(\begin{bmatrix} m_{n+1} \\ b_{n+1} \end{bmatrix} = \begin{bmatrix} m_n \\ b_n \end{bmatrix} + \alpha \begin{bmatrix} \frac{\partial E}{\partial m} \\ \frac{\partial E}{\partial b} \end{bmatrix}\),
+    where \(\alpha\) is our "mountain step" size, called the <b>learning rate</b>, which may
+    need to be tweaked (but is usually something like \(0.03\)). Depending on the problem, the
+    number of iterations needed may be in the hundreds, thousands, or even more as is the case
+    for artificial neural networks.
+</p>
+
+</div><!-- /.container -->
+
+
+
+
+
+<script>
+let dataCanvas = document.getElementById("dataCanvas");
+let dCtx = dataCanvas.getContext("2d");
+
+let resetBtn = document.getElementById("resetBtn");
+
+let nIters = document.getElementById("nIters");
+let alphaElem = document.getElementById("alpha")
+let outputArea = document.getElementById("outputArea");
+
+// drawing settings
+let pointRadius = 1.5;
+
+let points = [];
+
+let renderPoints = () => {
+    // start fresh every time
+    dCtx.fillStyle = "#fff"
+    dCtx.fillRect(0, 0, dataCanvas.width, dataCanvas.height)
+    dCtx.fillStyle = "#000"
+    // points are in [0,1]x[0,1] so scale up when drawing
+    let sx = dataCanvas.width/1
+    let sy = dataCanvas.height/1
+    for (let i=0, l=points.length; i<l; i++) {
+        let p = points[i]
+        dCtx.beginPath()
+        dCtx.arc(sx*p[0], sy*p[1], pointRadius, 0, 2*Math.PI)
+        dCtx.fill()
+    }
+}
+
+let addPoint = (evt) => {
+    // scale them down so the canvas is 1x1
+    points.push([evt.offsetX*1/dataCanvas.width, evt.offsetY*1/dataCanvas.height])
+    renderPoints();
+}
+
+let resetPoints = () => {
+    points = []
+    renderPoints()
+}
+
+dataCanvas.onclick = addPoint
+resetBtn.onclick = resetPoints
+
+// math part
+
+let drawLine = (m, b, color="red") => {
+    // currently the canvas represents [0,1]x[0,1]
+    let xMax = 1
+    let sx = dataCanvas.width/1;
+    let sy = dataCanvas.height/1;
+    dCtx.strokeStyle = color
+    dCtx.beginPath()
+    dCtx.moveTo(0, b*sy)
+    dCtx.lineTo(xMax*sx, (m*xMax + b)*sy)
+    dCtx.stroke()
+}
+// test it
+//drawLine(2, 0, "red")
+//drawLine(-2, 20, "blue")
+//drawLine(-2, 10, "green")
+//drawLine(2, -10, "yellow")
+
+let computeError = (m, b) => {
+    let err = 0
+    for (let i=0, l=points.length; i<l; i++) {
+        let [x, y] = points[i]
+        err += Math.pow(y - (m*x+b), 2)
+    }
+    return err/(2*points.length)
+}
+
+// e = 1/(2*pts.l) sum (y - mx - b)^2
+// de/dm = 1/(2*pts.l) sum -2*(y-mx-b)*x = 1/pts.l sum -(y-mx-b)*x
+// de/db = 1/(2*pts.l) sum -2*(y - mx - b) = 1/pts.l sum -(y - mx - b)
+let computeLineGrad = (m, b) => {
+    let ddm = 0;
+    let ddb = 0;
+    for (let i=0, l=points.length; i<l; i++) {
+        let [x, y] = points[i];
+        ddm += -1*(y-m*x-b)*x;
+        ddb += -1*(y - m*x - b);
+    }
+    //ddm /= points.length
+    //ddb /= points.length
+    let n = Math.hypot(ddm, ddb)
+    //ddm /= n;
+    //ddb /= n;
+    return [ddm, ddb];
+}
+
+let colors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet", "pink", "brown", "grey"]
+
+let round = (x, n) => Math.round(x*Math.pow(10, n)) / Math.pow(10, n);
+
+let computeLine = () => {
+    let N = parseInt(nIters.value) || 1000, alpha = parseFloat(alphaElem.value) || 0.03;
+    let m = Math.random()*10 - 5
+    let b = Math.random()*10 - 5
+    console.log("[Random start]:", "m:", m, "b:", b, "err:", computeError(m, b))
+    let s = new Date()
+    for (let i=0; i<N; i++) {
+        let [ddm, ddb] = computeLineGrad(m, b);
+        m -= alpha*ddm
+        b -= alpha*ddb
+        if (!isFinite(m) || !isFinite(b)) {
+            console.log("Non finite! at", i, "m", m, "b", b)
+            return
+        }
+    }
+    let e = new Date()
+    console.log("Computed", N, "gradients in", e-s, "ms")
+    console.log("[Optimization result]:","m:", m, "b:", b, "err:", computeError(m, b))
+    drawLine(m, b)
+    outputArea.innerHTML = "<b>m:</b> "+round(m, 3)+", <b>b:</b> "+round(b, 3)+", <b>error:</b> "+round(computeError(m, b), 3)+", <b>time:</b> "+round((e-s), 3)+"ms";
+}
+
+let computeLineBtn = document.getElementById("computeLineBtn")
+computeLineBtn.onclick = computeLine
+
+
+</script>
+</body>
+</html>

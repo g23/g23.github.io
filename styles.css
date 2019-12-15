@@ -1,0 +1,22 @@
+canvas {
+    border: 1px solid #000;
+}
+body {
+    font-family: Helvetica, arial;
+    line-height: 1.5;
+}
+.container {
+    margin: auto;
+    width: 840px;
+}
+.row {
+    display: flex;
+}
+.col {
+    flex: 50%;
+    padding: 10px;
+}
+
+.white-text {
+    color: white;
+}

@@ -2,26 +2,24 @@
 <html>
 
 <head>
+<link rel="stylesheet" href="styles.css">
 <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-<style>
-    .white-text {
-        color: white;
-    }
-</style>
 </head>
 <body>
 
-<h1>Random Pemdas Problem Generator</h1>
+<div class="container">
+<h1>Random PEMDAS Problem Generator</h1>
 
 <p>
-    Welcome to this random pemdas problem generator. This page generates problems by (pseudo)randomly
+    Welcome to this random PEMDAS problem generator. This page generates problems by (pseudo)randomly
     selecting numbers and operators. It does not generate these problems in a "nice" way such that terms
     will nicely cancel out. It's rather unlikely that there will be any canceling out. This page is
-    all about <b>practicing the order of operations</b>. You can check your work by selecting the white text
-    next to the equals sign. I recently added support for <b>fractions</b> so you'll still get
-    0.42857142857142855 but also 3/7. This makes it easier to check your work without a calculator. 
+    all about <b>practicing the order of operations</b>. You can check your work by highlighting the white text
+    next to the equals sign. I recently added support for fractions so you'll still get the decimal
+    solution along with it expressed as a fraction (as long as the denominator is less than 100,000)
+    This makes it easier to check your work without a calculator. 
 </p>
 
 <p>
@@ -41,6 +39,8 @@
 </p>
 
 <div id="results"></div>
+
+</div>
 
 <script>
 
