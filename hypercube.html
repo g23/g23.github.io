@@ -1,0 +1,312 @@
+<!doctype html>
+<html>
+<head>
+    <link rel="stylesheet" href="styles.css">
+    <title>Greg's Imaginal Workshop</title>
+    <style>
+        .bordered {
+            border: 1px solid #000;
+        }
+    </style>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+<div class="container">
+    <h1>Hypercubes - Visualizing 4D</h1>
+    <p>
+        Ever wanted to know what a 4 dimensional cube looks like? How can we even do that?
+    </p>
+    <p>
+        One explanation of what the 4th dimension is is time. This sort of works, thinking of a 3D object
+        changing through time, as a single 4 dimensional entity. What about a 4th spatial dimension,
+        what would that look like? It's very hard (maybe impossible?) to imagine because we're used to
+        thinking in 3 dimensional space, however computers might be able to help...
+    </p>
+    <h3>2D screen, 3D graphics</h3>
+    <p>
+        To see how we're going to visualize a 4D cube, we have to first look at how we can visualize a 3D cube.
+        The screen you're reading this on is a 2D surface-- there are two directions up-down and left-right.
+        Any point on the screen can be specified with two numbers, two coordinates, that we can write as \((x,y)\).
+        Three dimensional points have a third direction, forward-back, which is usually denoted as \(z\), so any
+        point in 3D space can be written as \((x,y,z)\). So a 3D object is a bunch of points \((x,y,z)\) and to display
+        these on a screen requires projecting them down into 2D as \((\hat{x},\hat{y})\) so they can be drawn on the screen.
+    </p>
+    <h3>Projections and Rotations</h3>
+    <p>
+        How do we get the \((\hat{x}, \hat{y})\) to represent the point \((x,y,z)\)? A simple way we can do this is to just
+        drop the z value. This is like looking at the object straight on and loses it's depth. If we want to be able
+        to see the depth, we could then rotate the object. This is the approach we'll use to see a 3D cube.
+    </p>
+    <div class="row">
+        <div class="col">
+            <canvas id="cube3d" width="500" height="500" class="bordered"></canvas>
+        </div>
+        <div class="col">
+            <p>
+                <b>Rotate about x axis:</b> <input id="xaxis3" type="range" value="0" min="0" max="6.28" step="0.1"> <br>
+                <b>Rotate about y axis:</b> <input id="yaxis3" type="range" value="0" min="0" max="6.28" step="0.1"> <br>
+                <b>Rotate about z axis:</b> <input id="zaxis3" type="range" value="0" min="0" max="6.28" step="0.1"> <br>
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <canvas id="cube4d" width="500" height="500" class="bordered"></canvas>
+        </div>
+        <div class="col">
+            <p>
+                <b>\( \alpha \):</b> <input id="aaxis4" type="range" value="0" min="0" max="6.28" step="0.1"> <br>
+                <b>\( \beta \):</b> <input id="baxis4" type="range" value="0" min="0" max="6.28" step="0.1"> <br>
+                <b>\( \gamma \):</b> <input id="caxis4" type="range" value="0" min="0" max="6.28" step="0.1"> <br>
+                <b>\( \delta \):</b> <input id="daxis4" type="range" value="0" min="0" max="6.28" step="0.1"> <br>
+                <b>\( \epsilon \):</b> <input id="eaxis4" type="range" value="0" min="0" max="6.28" step="0.1"> <br>
+                <b>\( \zeta \):</b> <input id="faxis4" type="range" value="0" min="0" max="6.28" step="0.1"> <br>
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // helpers
+        let $ = (q) => document.querySelector(q)
+
+        // make Arrays act like matricies
+        // an array of arrays is a list of rows
+        // a 1d array is a column vector
+        Array.prototype.mult = function(B) {
+            let A = this;
+            // check if B is a column vector
+            if (typeof(B[0]) == "number") {
+                // ok do matrix x column vector
+                let v = B; // for nice notation
+                let b = [] // our result, Av = b
+                // first check dimensions
+                if (A[0].length != v.length) {
+                    let sA = JSON.stringify(A)
+                    let sv = JSON.stringify(v)
+                    throw Error(`Matrix x vector dimension mismatch! ${sA} ${sv}`)
+                }
+                let M = A.length, N = v.length;
+                // now do the matrix multiply
+                for (let row=0; row<M; row++) {
+                    b[row] = 0;
+                    for (let col=0; col<N; col++) {
+                        b[row] += A[row][col] * v[col]
+                    }
+                }
+                return b
+            }
+            // else do a matrix multiply
+            // check if A is a column vector
+            if (typeof(A[0]) == "number") {
+                // make it a list of rows
+                A = A.map(n => [n])
+            }
+            // also check the sizes of the matricies are correct
+            if (A[0].length != B.length) {
+                let sA = JSON.stringify(A)
+                let sB = JSON.stringify(B)
+                throw Error(`Matrix dimension mismatch! ${sA} ${sB}`)
+            }
+            // AB = C
+            let M = A.length, N = B[0].length;
+            let C = [];
+            // first 0 the C
+            for (let r=0; r<M; r++) {
+                C[r] = []
+                for (let c=0; c<N; c++) {
+                    C[r][c] = 0
+                }
+            }
+            // now matrix multiply
+            for (let i=0; i<M; i++) {
+                for (let j=0; j<N; j++) {
+                    C[i][j] = 0;
+                    for (let k=0; k < B.length; k++) {
+                        C[i][j] += A[i][k]*B[k][j]
+                    }
+                }
+            }
+            return C
+        };
+
+        // add column vectors
+        Array.prototype.vadd = function(v) {
+            let u = this;
+            if (u.length != v.length) {
+                throw Error("Vector add dimension mismatch!")
+            }
+            let b = [], N = u.length
+            for (let i=0; i<N; i++) {
+                b[i] = u[i]+v[i]
+            }
+            return b;
+        };
+
+        let cube3 = [
+            [0,0,0],
+            [1,0,0],
+            [1,1,0],
+            [0,1,0],
+            [0,0,1],
+            [1,0,1],
+            [1,1,1],
+            [0,1,1]
+        ];
+
+        let xa3 = $("#xaxis3"), ya3 = $("#yaxis3"), za3 = $("#zaxis3")
+
+        let canvas3 = $("#cube3d")
+        let ctx3 = canvas3.getContext("2d")
+        let w3 = canvas3.width, h3 = canvas3.height;
+        // takes points from [-2,2] x [-2,2] -> [0, w] x [0, h] screen points
+        let toScreen = (p, w, h) => {
+            let origin = [w/2, h/2]
+            let T = [[w/4, 0], [0, -h/4]]
+            return T.mult(p).vadd(origin)
+        };
+        
+        let pointRadius = 5;
+        let tau = Math.PI*2;
+
+        // used to determine if should draw an edge
+        let dist = (p, p2) => {
+            let tot = 0;
+            for (let i=0; i<p.length; i++) {
+                tot += Math.pow(p[i]-p2[i], 2)
+            }
+            return Math.sqrt(tot)
+        };
+
+        let renderCube3 = () => {            
+            let xa = parseFloat(xa3.value)
+            let ya = parseFloat(ya3.value)
+            let za = parseFloat(za3.value)
+            let Rx = [[1, 0, 0],
+                      [0, Math.cos(xa), -Math.sin(xa)],
+                      [0, Math.sin(xa), Math.cos(xa)]];
+
+            let Ry = [[Math.cos(ya), 0, -Math.sin(ya)],
+                      [0, 1, 0],
+                      [Math.sin(ya), 0, Math.cos(ya)]];
+
+            let Rz = [[Math.cos(za), -Math.sin(za), 0],
+                      [Math.sin(za), Math.cos(za), 0],
+                      [0, 0, 1]];
+
+            let P = [[1, 0, 0],
+                     [0, 1, 0]]
+            let T = P.mult(Rx.mult(Ry).mult(Rz))
+            // clear the screen
+            ctx3.fillStyle = "#fff"
+            ctx3.fillRect(0, 0, w3, h3)
+            ctx3.fill()
+            ctx3.fillStyle = "#000";
+            // put the cube verticies on the screen
+            for (let i=0, l=cube3.length; i<l; i++) {
+                let v = cube3[i]
+                let p = toScreen(T.mult(v), w3, h3)
+                ctx3.beginPath();
+                ctx3.arc(p[0], p[1], pointRadius, 0, tau)
+                ctx3.fill()
+                // also draw any edges, edges happen when distance = 1
+                for (j=0; j<l; j++) {
+                    let v2 = cube3[j]
+                    if (dist(v,v2) == 1) {
+                        // draw an edge
+                        let p2 = toScreen(T.mult(v2), w3, h3)
+                        ctx3.beginPath()
+                        ctx3.moveTo(p[0], p[1])
+                        ctx3.lineTo(p2[0], p2[1])
+                        ctx3.stroke()
+                    }
+                }
+            }
+        };
+        renderCube3();
+        xa3.oninput = renderCube3;
+        ya3.oninput = renderCube3;
+        za3.oninput = renderCube3;
+
+        let cube4 = [
+            [0,0,0,0],
+            [1,0,0,0],
+            [1,1,0,0],
+            [0,1,0,0],
+            [0,0,1,0],
+            [1,0,1,0],
+            [1,1,1,0],
+            [0,1,1,0],
+            [0,0,0,1],
+            [1,0,0,1],
+            [1,1,0,1],
+            [0,1,0,1],
+            [0,0,1,1],
+            [1,0,1,1],
+            [1,1,1,1],
+            [0,1,1,1]
+        ];
+
+        let aa4 = $("#aaxis4"), ba4 = $("#baxis4"), ca4 = $("#caxis4")
+        let da4 = $("#daxis4"), ea4 = $("#eaxis4"), fa4 = $("#faxis4")
+
+        let canvas4 = $("#cube4d")
+        let ctx4 = canvas4.getContext("2d")
+        let w4 = canvas4.width, h4 = canvas4.height
+
+        let renderCube4 = () => {            
+            let aa = parseFloat(aa4.value)
+            let ba = parseFloat(ba4.value)
+            let ca = parseFloat(ca4.value)
+            let da = parseFloat(da4.value)
+            let ea = parseFloat(ea4.value)
+            let fa = parseFloat(fa4.value)
+            let Ra = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, Math.cos(aa), -Math.sin(aa)], [0, 0, Math.sin(aa), Math.cos(aa)]];
+            let Rb = [[1, 0, 0, 0], [0, Math.cos(ba), 0, -Math.sin(ba)], [0, 0, 1, 0], [0, Math.sin(ba), 0, Math.cos(ba)]];
+            let Rc = [[Math.cos(ca), 0, 0, -Math.sin(ca)], [0, 1, 0, 0], [0, 0, 1, 0], [Math.sin(ca), 0, 0, Math.cos(ca)]];
+            let Rd = [[1, 0, 0, 0], [0, Math.cos(da), -Math.sin(da), 0], [0, Math.sin(da), Math.cos(da), 0], [0, 0, 0, 1]];
+            let Re = [[Math.cos(ea), 0, -Math.sin(ea), 0], [0, 1, 0, 0], [Math.sin(ea), 0, Math.cos(ea), 0], [0, 0, 0, 1]];
+            let Rf = [[Math.cos(fa), -Math.sin(fa), 0, 0], [Math.sin(fa), Math.cos(fa), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
+            let P = [[1, 0, 0, 0], [0, 1, 0, 0]]
+            let T = P.mult(Ra.mult(Rb).mult(Rc).mult(Rd).mult(Re).mult(Rf))
+            // clear the screen
+            ctx4.fillStyle = "#fff"
+            ctx4.fillRect(0, 0, w4, h4)
+            ctx4.fill()
+            ctx4.fillStyle = "#000";
+            // put the cube verticies on the screen
+            for (let i=0, l=cube4.length; i<l; i++) {
+                let v = cube4[i]
+                let p = toScreen(T.mult(v), w4, h4)
+                ctx4.beginPath();
+                ctx4.arc(p[0], p[1], pointRadius, 0, tau)
+                ctx4.fill()
+                // also draw any edges, edges happen when distance = 1
+                for (j=0; j<l; j++) {
+                    let v2 = cube4[j]
+                    if (dist(v,v2) == 1) {
+                        // draw an edge
+                        let p2 = toScreen(T.mult(v2), w4, h4)
+                        ctx4.beginPath()
+                        ctx4.moveTo(p[0], p[1])
+                        ctx4.lineTo(p2[0], p2[1])
+                        ctx4.stroke()
+                    }
+                }
+            }
+        };
+        renderCube4()
+        aa4.oninput = renderCube4;
+        ba4.oninput = renderCube4;
+        ca4.oninput = renderCube4;
+        da4.oninput = renderCube4;
+        ea4.oninput = renderCube4;
+        fa4.oninput = renderCube4;
+
+
+    </script>
+</div>
+</body>
+</html>
