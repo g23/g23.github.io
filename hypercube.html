@@ -24,20 +24,82 @@
         what would that look like? It's very hard (maybe impossible?) to imagine because we're used to
         thinking in 3 dimensional space, however computers might be able to help...
     </p>
-    <h3>2D screen, 3D graphics</h3>
+    <h3>2D screen, 3D graphics? Projections</h3>
     <p>
         To see how we're going to visualize a 4D cube, we have to first look at how we can visualize a 3D cube.
         The screen you're reading this on is a 2D surface-- there are two directions up-down and left-right.
-        Any point on the screen can be specified with two numbers, two coordinates, that we can write as \((x,y)\).
+        Any point on the screen can be specified with two numbers, two coordinates, that we can write as \((x,y)\) or
+        \(\begin{bmatrix} x \\ y \end{bmatrix}\) or simply as \(\vec{p}\). That last notation denotes a vector which is 
+        technically not a point (think of it like a number with a direction) but that's for another post.
         Three dimensional points have a third direction, forward-back, which is usually denoted as \(z\), so any
-        point in 3D space can be written as \((x,y,z)\). So a 3D object is a bunch of points \((x,y,z)\) and to display
-        these on a screen requires projecting them down into 2D as \((\hat{x},\hat{y})\) so they can be drawn on the screen.
+        point in 3D space can be written as \(\begin{bmatrix} x \\ y \\ z \end{bmatrix}\). So how do we display a 3D object,
+        a bunch of points \(\begin{bmatrix} x \\ y \\ z\end{bmatrix}\), on a 2D screen? The answer is in the Transformation.
     </p>
-    <h3>Projections and Rotations</h3>
+    <h3>A Simple Transformation</h3>
     <p>
-        How do we get the \((\hat{x}, \hat{y})\) to represent the point \((x,y,z)\)? A simple way we can do this is to just
-        drop the z value. This is like looking at the object straight on and loses it's depth. If we want to be able
-        to see the depth, we could then rotate the object. This is the approach we'll use to see a 3D cube.
+        There are all sorts of transformations that go from 3D to 2D but we'll use a simple one:
+        \(\begin{bmatrix} x \\ y \\ z \end{bmatrix} \rightarrow \begin{bmatrix} x \\ y \end{bmatrix}\)
+    </p>
+    <p>
+        It'll be convenient so express this as a matrix multiplication. If you don't remember (or know) what a matrix is or know
+        how matrix multiplication works, look at the following equation and notice the pattern and pay attention to columns.
+
+        \[
+            P \vec{v} = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \end{bmatrix} \begin{bmatrix} x \\ y \\ z \end{bmatrix}
+            = x \begin{bmatrix} 1 \\ 0 \end{bmatrix} + y \begin{bmatrix} 0 \\ 1 \end{bmatrix} + z \begin{bmatrix} 0 \\ 0 \end{bmatrix}
+            = \begin{bmatrix} x \\ 0 \end{bmatrix} + \begin{bmatrix} 0 \\ y \end{bmatrix} + \begin{bmatrix} 0 \\ 0 \end{bmatrix}
+            = \begin{bmatrix} x \\ y \end{bmatrix}
+        \]
+        If the above operation makes sense, you're good to go. Also notice this matrix
+        \(P = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \end{bmatrix}\) takes a point \(\begin{bmatrix} x \\ y \\ z \end{bmatrix}\)
+        and maps it to the point \(\begin{bmatrix} x \\ y \end{bmatrix}\). This is exactly the transformation we were looking for!
+    </p>
+    <h3>Missing Information and Rotation</h3>
+    <p>
+        Now if all we do is our simple transformation, we won't really be able to tell it's a 3D thing we're looking at-- we've
+        just thrown out all the depth information. What we'll need to do is move the object around, that way we can get multiple
+        perspectives and see the 3D object. Now we could do this by modelling a camera and moving that around, like a video game,
+        but that'll be overly complex and really only necessary if we want to do lighting and shadows. Instead we'll go with a simpler
+        solution: <b>rotation</b>
+    </p>
+    <p>
+        As you might've guessed (or seen on the computer screen), rotations are transformations that can be expressed through
+        matrix multiplication (and a bit of trigonometry
+        [maybe there will be a future page on this, just know that \(\sin\) and \(\cos\) take in some angle \(\theta\)
+        and output numbers related to triangles]). In order to rotate a 2D point \(\begin{bmatrix} x \\ y \end{bmatrix}\)
+        by some angle \(\theta\) we can use
+        \(R = \begin{bmatrix} \cos{\theta} & -\sin{\theta} \\ \sin{\theta} & \cos{\theta} \end{bmatrix} \).
+    </p>
+    <p>
+        However, if we rotate after we've mapped the point down to 2D, we'll already have lost the depth information so it'll
+        be no good. Instead we need to rotate in 3D first, then map down to 2D. And in 3D there are actually 3 ways we can rotate:
+        rotate about the x-axis, y-axis, or z-axis. These are all just variations on the 2D rotation \(R\) but we leave one of
+        the coordinates unchanged.
+
+        \[
+            R_x = \begin{bmatrix} 1 & 0 & 0 \\ 0 & \cos{\theta} & -\sin{\theta} \\ 0 & \sin{\theta} & \cos{\theta} \end{bmatrix},
+            R_y = \begin{bmatrix} \cos{\theta} & 0 & -\sin{\theta} \\ 0 & 1 & 0 \\ \sin{\theta} & 0 & \cos{\theta} \end{bmatrix},
+            R_z = \begin{bmatrix} \cos{\theta} & -\sin{\theta} & 0 \\ \sin{\theta} & \cos{\theta} & 0 \\ 0 & 0 & 1 \end{bmatrix}
+        \]
+
+        Let's see how this works (and give another example of matrix multiplication):
+
+        \[
+            R_y \vec{v}
+            = \begin{bmatrix} \cos{\theta} & 0 & -\sin{\theta} \\ 0 & 1 & 0 \\ \sin{\theta} & 0 & \cos{\theta} \end{bmatrix} \begin{bmatrix} x \\ y \\ z \end{bmatrix}
+            = x \begin{bmatrix} \cos{\theta} \\ 0 \\ \sin{\theta} \end{bmatrix} + y \begin{bmatrix} 0 \\ 1 \\ 0 \end{bmatrix}
+            + z \begin{bmatrix} -\sin{\theta} \\ 0 \\ \cos{\theta} \end{bmatrix}
+            = \begin{bmatrix} x \cos{\theta} \\ 0 \\ x \sin{\theta} \end{bmatrix} + \begin{bmatrix} 0 \\ y \\ 0 \end{bmatrix}
+            + \begin{bmatrix} -z \sin{\theta} \\ 0 \\ z \cos{\theta} \end{bmatrix}
+            = \begin{bmatrix} x \cos{\theta} - z \sin{\theta} \\ y \\ x \sin{\theta} + z\cos{\theta} \end{bmatrix}
+        \]
+
+        So we see that \(y\) is left unchanged and \(x\) and \(z\) are intermingled in a trigonometric way expressing the rotation.
+    </p>
+    <h3>3D Demo Time!</h3>
+    <p>
+        Below you will find a 3D cube to play with. Try moving the sliders one at a time first, the 3D "effect" happens when you move
+        more than one slider. 
     </p>
     <div class="row">
         <div class="col">
@@ -51,7 +113,78 @@
             </p>
         </div>
     </div>
+    <h3>4D Cube Verticies</h3>
+    <p>
+        Now the question of how to render a 4 dimensional cube. To add a forth dimension we just add another number to our points
+        like so: \( \begin{bmatrix} x \\ y \\ z \\ w \end{bmatrix} \). Now the question is what are the verticies of a 4D cube?
+        We can start by looking at what happens when we go from a square (a 2D "cube") to a cube (a 3D cube). For a square the
+        points are: \( \begin{bmatrix} 0 \\ 0 \end{bmatrix} \), \( \begin{bmatrix} 1 \\ 0 \end{bmatrix} \),
+        \( \begin{bmatrix} 1 \\ 1 \end{bmatrix} \), and \( \begin{bmatrix} 0 \\ 1 \end{bmatrix} \).
+        For a cube the points are:
+        \( \begin{bmatrix} 0 \\ 0 \\ 0 \end{bmatrix} \), \( \begin{bmatrix} 1 \\ 0 \\ 0 \end{bmatrix} \),
+        \( \begin{bmatrix} 1 \\ 1 \\ 0 \end{bmatrix} \), \( \begin{bmatrix} 0 \\ 1 \\ 0 \end{bmatrix} \),
+        \( \begin{bmatrix} 0 \\ 0 \\ 1 \end{bmatrix} \), \( \begin{bmatrix} 1 \\ 0 \\ 1 \end{bmatrix} \),
+        \( \begin{bmatrix} 1 \\ 1 \\ 1 \end{bmatrix} \), and \( \begin{bmatrix} 0 \\ 1 \\ 1 \end{bmatrix} \). Notice what we did
+        to go from a square to a cube, we took all the square's points and added a \( 0 \) or a \( 1 \). So to get a 4D cube,
+        we'll take all of the cube's points and add a \( 0 \) or a \( 1 \) to end up with 16 points.
+    </p>
+    <h3>4D Cube Edges</h3>
+    <p>
+        Now we have the question of which verticies are connected. For a square and a cube we know where to draw the edges, we
+        know not to connect the diagonals for instance, but how to we know which verticies to connect in the 4D case? We have to look
+        for a pattern that doesn't depend on us being able to "visualize" it to know where to put the edges. In the case of a square
+        we have \( \begin{bmatrix} 0 \\ 0 \end{bmatrix} \rightarrow \begin{bmatrix} 1 \\ 0 \end{bmatrix} \rightarrow
+        \begin{bmatrix} 1 \\ 1 \end{bmatrix} \rightarrow \begin{bmatrix} 0 \\ 1 \end{bmatrix} \rightarrow
+        \begin{bmatrix} 0 \\ 0 \end{bmatrix} \). Notice the pattern, there's an edge between the points if they only differ by 1. You'll
+        see this is the same thing that happens for a cube too. So there's our rule, we can use this to know which 4D verticies to connect!
+    </p>
+    <h3>Visualizing 4D with Projections and Rotations</h3>
+    <p>
+        We'll use the same ideas of projecting and rotating that we did on the 3D cube to visualize the 4D cube. Here our projection
+        matrix is similar but a little bigger:
+        \[ P\vec{v} = \begin{bmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \end{bmatrix} \begin{bmatrix} x \\ y \\ z \\ w \end{bmatrix}
+        = x \begin{bmatrix} 1 \\ 0 \end{bmatrix} + y \begin{bmatrix} 0 \\ 1 \end{bmatrix} + z \begin{bmatrix} 0 \\ 0 \end{bmatrix} 
+        + w \begin{bmatrix} 0 \\ 0 \end{bmatrix} = \begin{bmatrix} x \\ 0 \end{bmatrix} + \begin{bmatrix} 0 \\ y \end{bmatrix}
+        + \vec{0} + \vec{0} = \begin{bmatrix} x \\ y \end{bmatrix} \]
+        Also now we have 6 rotation matricies for all the ways that we could swap two components:
+        \[
+            R_{\alpha} = \begin{bmatrix} 1 & 0 & 0 & 0 \\
+                                         0 & 1 & 0 & 0 \\
+                                         0 & 0 & \cos{\alpha} & -\sin{\alpha} \\
+                                         0 & 0 & \sin{\alpha} & \cos{\alpha} \end{bmatrix},
+            
+            R_{\beta} = \begin{bmatrix}  1 & 0 & 0 & 0 \\
+                                         0 & \cos{\beta} & 0 & -\sin{\beta} \\
+                                         0 & 0 & 1 & 0 \\
+                                         0 & \sin{\beta} & 0 & \cos{\beta} \end{bmatrix},
+            
+            R_{\gamma} = \begin{bmatrix} \cos{\gamma} & 0 & 0 & -\sin{\gamma} \\
+                                         0 & 1 & 0 & 0 \\
+                                         0 & 0 & 1 & 0 \\
+                                         \sin{\gamma} & 0 & 0 & \cos{\gamma} \end{bmatrix},
+        \]
 
+        \[
+            R_{\delta} = \begin{bmatrix}   1 & 0 & 0 & 0 \\
+                                           0 & \cos{\delta} & -\sin{\delta} & 0 \\
+                                           0 & \sin{\delta} & \cos{\delta} & 0 \\
+                                           0 & 0 & 0 & 1 \end{bmatrix},
+            
+            R_{\epsilon} = \begin{bmatrix} \cos{\epsilon} & 0 & -\sin{\epsilon} & 0 \\
+                                           0 & 1 & 0 & 0 \\
+                                           \sin{\epsilon} & 0 & \cos{\epsilon} & 0 \\
+                                           0 & 0 & 0 & 1 \end{bmatrix},
+            
+            R_{\zeta} = \begin{bmatrix}   \cos{\zeta} & -\sin{\zeta} & 0 & 0 \\
+                                          \sin{\zeta} & \cos{\zeta} & 0 & 0 \\
+                                          0 & 0 & 1 & 0 \\
+                                          0 & 0 & 0 & 1 \end{bmatrix}.
+        \]
+    </p>
+    <h3>4D Demo</h3>
+    <p>
+        Below you'll find a demo of the 4D cube, again to really see it you need to rotate in several ways.
+    </p>
     <div class="row">
         <div class="col">
             <canvas id="cube4d" width="500" height="500" class="bordered"></canvas>
@@ -270,7 +403,7 @@
             let Re = [[Math.cos(ea), 0, -Math.sin(ea), 0], [0, 1, 0, 0], [Math.sin(ea), 0, Math.cos(ea), 0], [0, 0, 0, 1]];
             let Rf = [[Math.cos(fa), -Math.sin(fa), 0, 0], [Math.sin(fa), Math.cos(fa), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]];
             let P = [[1, 0, 0, 0], [0, 1, 0, 0]]
-            let T = P.mult(Ra.mult(Rb).mult(Rc).mult(Rd).mult(Re).mult(Rf))
+            let T = P.mult(Rf.mult(Re).mult(Rd).mult(Rc).mult(Rb).mult(Ra))
             // clear the screen
             ctx4.fillStyle = "#fff"
             ctx4.fillRect(0, 0, w4, h4)
